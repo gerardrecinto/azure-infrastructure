@@ -1,0 +1,62 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'platform/**'
+      - 'workloads/**'
+      - 'landing-zone/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply:
+    name: Apply (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      # Serialize applies to prevent concurrent state lock conflicts
+      max-parallel: 1
+      matrix:
+        include:
+          - workspace: platform/hub-network
+            subscription: PLACEHOLDER_CONNECTIVITY_SUBSCRIPTION_ID
+          - workspace: platform/monitoring
+            subscription: PLACEHOLDER_MANAGEMENT_SUBSCRIPTION_ID
+          - workspace: workloads/aks-platform
+            subscription: PLACEHOLDER_WORKLOADS_SUBSCRIPTION_ID
+          - workspace: workloads/api-platform
+            subscription: PLACEHOLDER_WORKLOADS_SUBSCRIPTION_ID
+          - workspace: workloads/messaging
+            subscription: PLACEHOLDER_WORKLOADS_SUBSCRIPTION_ID
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ matrix.subscription }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.8"
+
+      - name: Terraform Init
+        working-directory: ${{ matrix.workspace }}
+        run: terraform init -backend-config="use_oidc=true"
+
+      - name: Terraform Apply
+        working-directory: ${{ matrix.workspace }}
+        run: terraform apply -auto-approve
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_SUBSCRIPTION_ID: ${{ matrix.subscription }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}

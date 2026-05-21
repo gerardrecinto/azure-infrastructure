@@ -1,0 +1,85 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'platform/**'
+      - 'workloads/**'
+      - 'landing-zone/**'
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: Plan (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - workspace: platform/hub-network
+            subscription: PLACEHOLDER_CONNECTIVITY_SUBSCRIPTION_ID
+          - workspace: platform/monitoring
+            subscription: PLACEHOLDER_MANAGEMENT_SUBSCRIPTION_ID
+          - workspace: workloads/aks-platform
+            subscription: PLACEHOLDER_WORKLOADS_SUBSCRIPTION_ID
+          - workspace: workloads/api-platform
+            subscription: PLACEHOLDER_WORKLOADS_SUBSCRIPTION_ID
+          - workspace: workloads/messaging
+            subscription: PLACEHOLDER_WORKLOADS_SUBSCRIPTION_ID
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ matrix.subscription }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.8"
+
+      - name: Terraform Init
+        working-directory: ${{ matrix.workspace }}
+        run: terraform init -backend-config="use_oidc=true"
+
+      - name: Terraform Format Check
+        working-directory: ${{ matrix.workspace }}
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        working-directory: ${{ matrix.workspace }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ matrix.workspace }}
+        run: terraform plan -out=tfplan -no-color 2>&1 | tee plan.txt
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_SUBSCRIPTION_ID: ${{ matrix.subscription }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+
+      - name: Post plan to PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('${{ matrix.workspace }}/plan.txt', 'utf8');
+            const truncated = plan.length > 60000 ? plan.slice(0, 60000) + '\n... (truncated)' : plan;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Terraform Plan — \`${{ matrix.workspace }}\`\n<details><summary>Show Plan</summary>\n\n\`\`\`hcl\n${truncated}\n\`\`\`\n</details>`
+            });
