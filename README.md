@@ -1,6 +1,6 @@
 # azure-infrastructure
 
-Enterprise Azure infrastructure using Terraform. Hub-spoke topology, private AKS, APIM behind Front Door Premium, Service Bus Premium, and centralized Key Vault — all provisioned via OIDC-authenticated GitHub Actions with no stored service principal secrets.
+Enterprise Azure infrastructure using Terraform. Hub-spoke topology, private AKS, APIM behind Front Door Premium, Service Bus Premium, and centralized Key Vault: all provisioned via OIDC-authenticated GitHub Actions with no stored service principal secrets.
 
 > All company-specific values (subscription IDs, tenant IDs, resource names, CIDR blocks, hostnames) are replaced with `PLACEHOLDER_*` values.
 
