@@ -1,5 +1,12 @@
 # azure-infrastructure
 
+![Terraform](https://img.shields.io/badge/Terraform-1.7%2B-7B42BC?logo=terraform&logoColor=white)
+![Azure](https://img.shields.io/badge/Azure-AKS%20%7C%20APIM%20%7C%20Front%20Door-0078D4?logo=microsoftazure&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-OIDC-2088FF?logo=githubactions&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-22c55e)
+
+![Demo](docs/assets/demo.gif)
+
 Enterprise Azure infrastructure using Terraform. Hub-spoke topology, private AKS, APIM behind Front Door Premium, Service Bus Premium, and centralized Key Vault: all provisioned via OIDC-authenticated GitHub Actions with no stored service principal secrets.
 
 > All company-specific values (subscription IDs, tenant IDs, resource names, CIDR blocks, hostnames) are replaced with `PLACEHOLDER_*` values.
