@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package infrastructure
+        run: zip -r azure-infrastructure-${{ github.ref_name }}.zip . --exclude '.git/*' --exclude '.github/*'
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: azure-infrastructure-${{ github.ref_name }}.zip
+          generate_release_notes: true

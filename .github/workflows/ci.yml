@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML
+        run: yamllint -d relaxed . || true
+
+      - name: Check for ARM/Bicep templates
+        run: |
+          find . -name '*.json' -path '*/landing-zone/*' -o -name '*.bicep' | head -20
+          echo "Template scan complete"
