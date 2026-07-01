@@ -52,7 +52,7 @@ data "azurerm_private_dns_zone" "sb" {
 }
 
 module "servicebus" {
-  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/servicebus?ref=main"
+  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/servicebus?ref=v1.0.0"
 
   name                       = var.namespace_name
   location                   = var.location

@@ -30,7 +30,7 @@ resource "azurerm_resource_group" "monitoring" {
 }
 
 module "monitoring" {
-  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/monitoring?ref=main"
+  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/monitoring?ref=v1.0.0"
 
   prefix                = var.prefix
   location              = var.location

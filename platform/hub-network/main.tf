@@ -30,7 +30,7 @@ resource "azurerm_resource_group" "networking" {
 }
 
 module "hub_spoke" {
-  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/networking?ref=main"
+  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/networking?ref=v1.0.0"
 
   prefix              = var.prefix
   location            = var.location

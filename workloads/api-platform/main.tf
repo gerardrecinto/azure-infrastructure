@@ -52,7 +52,7 @@ data "azurerm_private_dns_zone" "kv" {
 }
 
 module "keyvault" {
-  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/keyvault?ref=main"
+  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/keyvault?ref=v1.0.0"
 
   name                       = var.keyvault_name
   location                   = var.location
@@ -65,7 +65,7 @@ module "keyvault" {
 }
 
 module "apim" {
-  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/apim?ref=main"
+  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/apim?ref=v1.0.0"
 
   name                       = var.apim_name
   prefix                     = var.prefix
@@ -84,7 +84,7 @@ module "apim" {
 }
 
 module "frontdoor" {
-  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/frontdoor?ref=main"
+  source = "git::https://github.com/gerardrecinto/Terraform.git//Azure/modules/frontdoor?ref=v1.0.0"
 
   prefix              = var.prefix
   location            = var.location
