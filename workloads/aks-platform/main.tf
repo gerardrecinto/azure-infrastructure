@@ -86,10 +86,19 @@ resource "azurerm_kubernetes_cluster" "main" {
   network_profile {
     network_plugin      = "azure"
     network_plugin_mode = "overlay"
+    network_policy      = "cilium"
+    network_data_plane  = "cilium"
     pod_cidr            = var.pod_cidr
     service_cidr        = var.service_cidr
     dns_service_ip      = var.dns_service_ip
     outbound_type       = "userDefinedRouting"
+  }
+
+  # local_account_disabled requires AAD RBAC as the only auth path into the cluster
+  azure_active_directory_role_based_access_control {
+    tenant_id              = var.tenant_id
+    azure_rbac_enabled     = true
+    admin_group_object_ids = var.aks_admin_group_object_ids
   }
 
   default_node_pool {

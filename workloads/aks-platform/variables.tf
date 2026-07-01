@@ -17,6 +17,17 @@ variable "aks_vnet_name" {
   type = string
 }
 
+variable "tenant_id" {
+  type    = string
+  default = "PLACEHOLDER_TENANT_ID"
+}
+
+variable "aks_admin_group_object_ids" {
+  type        = list(string)
+  description = "Azure AD group object IDs granted cluster-admin via Azure RBAC"
+  default     = ["PLACEHOLDER_AKS_ADMIN_GROUP_OBJECT_ID"]
+}
+
 variable "kubernetes_version" {
   type    = string
   default = "1.29"
