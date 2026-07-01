@@ -5,19 +5,57 @@ on:
     branches: ['**']
   pull_request:
 
+env:
+  TF_VERSION: "1.8.5"
+
 jobs:
-  validate:
+  fmt:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install yamllint
-        run: pip install yamllint
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
 
-      - name: Lint YAML
-        run: yamllint -d relaxed . || true
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive -diff
 
-      - name: Check for ARM/Bicep templates
-        run: |
-          find . -name '*.json' -path '*/landing-zone/*' -o -name '*.bicep' | head -20
-          echo "Template scan complete"
+  validate:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - landing-zone/management-groups
+          - landing-zone/policies
+          - platform/hub-network
+          - platform/monitoring
+          - workloads/aks-platform
+          - workloads/api-platform
+          - workloads/messaging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init (no backend, no Azure creds)
+        working-directory: ${{ matrix.module }}
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform Validate
+        working-directory: ${{ matrix.module }}
+        run: terraform validate
+
+  security-scan:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          soft_fail: false
+          additional_args: --exclude-downloaded-modules
