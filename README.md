@@ -51,17 +51,17 @@ Commercial angle and consulting hooks: [docs/go-to-market.md](docs/go-to-market.
 
 ## Design decisions
 
-**Hub-spoke over full mesh** — At n spokes, full mesh requires n*(n-1)/2 peering connections and each spoke manages routes to every other spoke. Hub-spoke centralizes east-west traffic through Azure Firewall Premium (IDPS + application layer inspection). Adding a new spoke is one peering pair, not n-1.
+**Hub-spoke over full mesh**: At n spokes, full mesh requires n*(n-1)/2 peering connections and each spoke manages routes to every other spoke. Hub-spoke centralizes east-west traffic through Azure Firewall Premium (IDPS + application layer inspection). Adding a new spoke is one peering pair, not n-1.
 
-**APIM Internal VNet + Front Door Premium** — APIM has no routable public IP. Front Door Premium reaches the APIM internal VIP via Private Link, so the gateway is only reachable after passing the WAF layer. The common alternative (APIM on a public IP behind IP allowlisting) fails when IPs rotate.
+**APIM Internal VNet + Front Door Premium**: APIM has no routable public IP. Front Door Premium reaches the APIM internal VIP via Private Link, so the gateway is only reachable after passing the WAF layer. The common alternative (APIM on a public IP behind IP allowlisting) fails when IPs rotate.
 
-**Private AKS cluster** — The API server endpoint is a private endpoint inside the hub VNet. Operators connect via Bastion → jump VM → kubectl. Even a misconfigured NSG cannot expose the API server to the internet.
+**Private AKS cluster**: The API server endpoint is a private endpoint inside the hub VNet. Operators connect via Bastion → jump VM → kubectl. Even a misconfigured NSG cannot expose the API server to the internet.
 
-**Azure CNI Overlay over classic Azure CNI** — Classic Azure CNI allocates pod IPs from the VNet subnet, exhausting a /22 at roughly 200 nodes. CNI Overlay keeps pod IPs in a separate overlay CIDR (/16) that does not consume VNet address space, while nodes retain VNet IPs for subnet-scoped network policies.
+**Azure CNI Overlay over classic Azure CNI**: Classic Azure CNI allocates pod IPs from the VNet subnet, exhausting a /22 at roughly 200 nodes. CNI Overlay keeps pod IPs in a separate overlay CIDR (/16) that does not consume VNet address space, while nodes retain VNet IPs for subnet-scoped network policies.
 
-**Workload Identity over pod-managed identity (NMI)** — MSI used an in-cluster DaemonSet (NMI) that intercepted all IMDS traffic on port 2579. An SSRF vulnerability in any pod could reach the IMDS endpoint and escalate to the node-level managed identity. Workload Identity issues federated OIDC tokens scoped to specific Kubernetes ServiceAccounts — a compromised pod can only access the identity explicitly assigned to its ServiceAccount.
+**Workload Identity over pod-managed identity (NMI)**: MSI used an in-cluster DaemonSet (NMI) that intercepted all IMDS traffic on port 2579. An SSRF vulnerability in any pod could reach the IMDS endpoint and escalate to the node-level managed identity. Workload Identity issues federated OIDC tokens scoped to specific Kubernetes ServiceAccounts: a compromised pod can only access the identity explicitly assigned to its ServiceAccount.
 
-**Key Vault RBAC over access policies** — Access policies predate Azure RBAC and do not integrate with Conditional Access, PIM, or Azure Policy audit. `enable_rbac_authorization = true` means Key Vault access goes through the same role pipeline as every other Azure resource: auditable, PIM-eligible, and enforceable via Policy deny effects.
+**Key Vault RBAC over access policies**: Access policies predate Azure RBAC and do not integrate with Conditional Access, PIM, or Azure Policy audit. `enable_rbac_authorization = true` means Key Vault access goes through the same role pipeline as every other Azure resource: auditable, PIM-eligible, and enforceable via Policy deny effects.
 
 ---
 
@@ -105,7 +105,7 @@ Workloads depend on hub-network output (VNet IDs, subnet IDs) and monitoring out
 
 ---
 
-## GitHub Actions OIDC — no stored secrets
+## GitHub Actions OIDC: no stored secrets
 
 The service principal authenticates via federated identity credentials. No `AZURE_CLIENT_SECRET` is stored.
 
