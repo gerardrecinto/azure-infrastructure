@@ -1,5 +1,14 @@
 terraform {
   required_version = ">= 1.5"
+
+  backend "azurerm" {
+    resource_group_name  = "PLACEHOLDER_TFSTATE_RG"
+    storage_account_name = "PLACEHOLDER_TFSTATE_SA"
+    container_name       = "tfstate"
+    key                  = "landing-zone/management-groups.tfstate"
+    use_oidc             = true
+  }
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
