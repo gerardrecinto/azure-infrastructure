@@ -21,6 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - workspace: landing-zone/management-groups
+            subscription: PLACEHOLDER_MANAGEMENT_SUBSCRIPTION_ID
+          - workspace: landing-zone/policies
+            subscription: PLACEHOLDER_MANAGEMENT_SUBSCRIPTION_ID
           - workspace: platform/hub-network
             subscription: PLACEHOLDER_CONNECTIVITY_SUBSCRIPTION_ID
           - workspace: platform/monitoring
