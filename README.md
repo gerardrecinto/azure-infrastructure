@@ -101,7 +101,7 @@ pipelines/
 7. workloads/messaging               (workloads subscription)
 ```
 
-Workloads depend on hub-network output (VNet IDs, subnet IDs) and monitoring output (Log Analytics workspace ID) via `terraform_remote_state`.
+Workloads pull the Log Analytics workspace ID from `platform/monitoring` via `terraform_remote_state`. Subnet IDs from `platform/hub-network` are looked up directly with `data "azurerm_subnet"`, keyed by the `${var.prefix}-networking-rg` naming convention rather than remote state, since hub-network exposes its VNet/subnet IDs as outputs but workloads never read that state file.
 
 ---
 
