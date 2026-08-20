@@ -59,8 +59,14 @@ variable "jwt_audience" {
 }
 
 variable "waf_mode" {
-  type    = string
-  default = "Prevention"
+  type        = string
+  description = "Front Door WAF policy mode."
+  default     = "Prevention"
+
+  validation {
+    condition     = contains(["Detection", "Prevention"], var.waf_mode)
+    error_message = "waf_mode must be either \"Detection\" or \"Prevention\"."
+  }
 }
 
 variable "tags" {

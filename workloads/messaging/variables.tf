@@ -23,8 +23,14 @@ variable "namespace_name" {
 }
 
 variable "capacity" {
-  type    = number
-  default = 1
+  type        = number
+  description = "Messaging units for the Premium Service Bus namespace."
+  default     = 1
+
+  validation {
+    condition     = contains([1, 2, 4, 8, 16], var.capacity)
+    error_message = "capacity must be one of 1, 2, 4, 8, or 16 messaging units (Service Bus Premium tier)."
+  }
 }
 
 variable "topics" {
