@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>azure-infrastructure: hub-spoke Azure on Terraform</title>
+<meta name="description" content="Click through a private AKS, APIM and Front Door Azure architecture to read each design decision next to the Terraform stack that builds it. OIDC pipelines, no stored secrets.">
+<meta property="og:title" content="azure-infrastructure">
+<meta property="og:description" content="Click through a private AKS, APIM and Front Door Azure architecture to read each design decision next to the Terraform stack that builds it. OIDC pipelines, no stored secrets.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2306b6d4'/%3E%3Ccircle cx='16' cy='16' r='6' fill='none' stroke='%23fff' stroke-width='3'/%3E%3C/svg%3E">
+<style>
+
+:root{--bg:#f8fafc;--panel:#fff;--panel2:#f1f5f9;--line:#e2e8f0;--fg:#0f172a;--mute:#475569;--brand:#0e7490;--brand-bg:#cffafe;--ok:#047857;--ok-bg:#d1fae5;--err:#b91c1c;--err-bg:#fee2e2;--code:#0b1220;--code-fg:#e2e8f0}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#070d1a;--panel:#0d1526;--panel2:#111c33;--line:#1e2b47;--fg:#e8eefc;--mute:#9fb0cc;--brand:#22d3ee;--brand-bg:#08333d;--ok:#34d399;--ok-bg:#06382b;--err:#fca5a5;--err-bg:#3b1212}}
+:root[data-theme=dark]{--bg:#070d1a;--panel:#0d1526;--panel2:#111c33;--line:#1e2b47;--fg:#e8eefc;--mute:#9fb0cc;--brand:#22d3ee;--brand-bg:#08333d;--ok:#34d399;--ok-bg:#06382b;--err:#fca5a5;--err-bg:#3b1212}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--brand)}
+code,pre,textarea,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+nav{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px;gap:12px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--fg);text-decoration:none}
+.logo i{width:22px;height:22px;border-radius:6px;background:#06b6d4;display:inline-block}
+nav .links{display:flex;gap:18px;align-items:center;font-size:14px}
+nav .links a{color:var(--mute);text-decoration:none}
+nav .links a:hover{color:var(--fg)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid var(--line);color:var(--fg);background:var(--panel);cursor:pointer;font-size:15px}
+.btn.primary{background:#06b6d4;border-color:#06b6d4;color:#032a33}
+.btn.primary:hover{background:#22d3ee}
+.btn:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #06b6d4;outline-offset:2px}
+.hero{padding:72px 0 40px;text-align:center}
+.pill{display:inline-block;font-size:13px;color:var(--brand);background:var(--brand-bg);padding:4px 12px;border-radius:99px;margin-bottom:20px;font-weight:600}
+h1{font-size:clamp(34px,6vw,58px);line-height:1.08;margin:0 0 18px;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--brand)}
+.lede{max-width:700px;margin:0 auto 28px;color:var(--mute);font-size:18px}
+.cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.stats{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-top:36px;color:var(--mute);font-size:14px}
+.stats b{display:block;color:var(--fg);font-size:22px}
+section{padding:56px 0}
+h2{font-size:clamp(26px,4vw,36px);margin:0 0 8px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 28px;max-width:720px}
+.lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.lab{grid-template-columns:minmax(0,1fr)}nav .links .hide-s{display:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-width:0}
+.card h3{margin:0;padding:12px 16px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:600 12px system-ui;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);cursor:pointer;text-transform:none;letter-spacing:0}
+.chip[aria-pressed=true]{background:var(--brand-bg);border-color:var(--brand);color:var(--brand)}
+#log{display:block;width:100%;height:420px;border:0;padding:12px 14px;font-size:12.5px;line-height:1.55;background:var(--code);color:var(--code-fg);resize:vertical;white-space:pre;overflow:auto}
+.src{display:flex;gap:8px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--mute);flex-wrap:wrap}
+.out{min-height:420px}
+.status{padding:16px;color:var(--mute);font-size:14px}
+.verdict{padding:18px 16px;border-bottom:1px solid var(--line);background:var(--err-bg)}
+.verdict.unknown{background:var(--panel2)}
+.verdict b{display:block;font-size:20px;text-transform:uppercase;letter-spacing:.04em;color:var(--err)}
+.verdict.unknown b{color:var(--mute)}
+.verdict span{font-size:14px;color:var(--mute)}
+.sec{padding:14px 16px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.bar{height:10px;border-radius:99px;background:var(--panel2);overflow:hidden;max-width:260px;display:inline-block;vertical-align:middle;margin-right:10px;width:60%}
+.bar i{display:block;height:100%;background:#06b6d4}
+.site{padding:8px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.site:last-child{border:0}
+.site code{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px}
+.fix{background:var(--ok-bg);color:var(--ok);padding:10px 12px;border-radius:8px;font-size:14px}
+.note{font-size:13px;color:var(--mute);margin-top:12px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:860px){.steps{grid-template-columns:minmax(0,1fr)}}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.step .n{width:28px;height:28px;border-radius:8px;background:var(--brand-bg);color:var(--brand);display:grid;place-items:center;font-weight:700;margin-bottom:10px}
+.step h3{margin:0 0 6px;font-size:17px}
+.step p{margin:0;color:var(--mute);font-size:15px}
+.tw{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow-x:auto;max-width:100%}
+table{width:100%;min-width:560px;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);background:var(--panel2)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-family:ui-monospace,monospace;font-weight:700;white-space:nowrap}
+.install pre{background:var(--code);color:var(--code-fg);padding:16px;border-radius:12px;overflow-x:auto;font-size:13.5px;margin:0 0 12px}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.cols2{grid-template-columns:minmax(0,1fr)}}
+.limits{background:var(--panel);border:1px solid var(--line);border-left:4px solid #f59e0b;border-radius:10px;padding:16px 20px}
+.limits ul{margin:8px 0 0;padding-left:20px;color:var(--mute)}
+footer{border-top:1px solid var(--line);padding:32px 0;color:var(--mute);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.arch{display:grid;gap:10px;padding:16px}
+.row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.nd{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel2);cursor:pointer;text-align:left;color:var(--fg);font:inherit;min-width:0}
+.nd b{display:block;font-size:14px}
+.nd small{color:var(--mute);font-size:12px}
+.nd[aria-pressed=true]{outline:2px solid var(--brand);background:var(--brand-bg)}
+.nd.edge{border-style:dashed}
+.arrow{text-align:center;color:var(--mute);font-size:12px;font-family:ui-monospace,monospace}
+.det{padding:16px}
+.det h4{margin:0 0 6px;font-size:16px}
+.det p{margin:0 0 10px;color:var(--mute);font-size:14.5px}
+.det .why{color:var(--fg)}
+.rs code{background:var(--panel2);padding:2px 7px;border-radius:5px;font-size:12px;margin:0 4px 4px 0;display:inline-block;overflow-wrap:anywhere}
+.ord{display:flex;gap:8px;flex-wrap:wrap}
+.ord button{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--panel);font-size:13px;display:flex;gap:8px;align-items:center}
+.ord button[aria-pressed=true]{outline:2px solid var(--brand);background:var(--brand-bg)}
+.ord .n{width:22px;height:22px;border-radius:6px;background:var(--brand-bg);color:var(--brand);display:grid;place-items:center;font-weight:700;font-size:12px}
+.k{font:700 11px ui-monospace,monospace;padding:2px 8px;border-radius:6px;background:var(--brand-bg);color:var(--brand)}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="logo" href="#top"><i></i>azure-infrastructure</a>
+  <div class="links"><a href="#try" class="hide-s">Explore</a><a href="#install" class="hide-s">Install</a><a class="btn" href="https://github.com/gerardrecinto/azure-infrastructure">GitHub</a></div>
+</div></nav>
+
+<header class="hero" id="top"><div class="wrap">
+  <h1>No public IP on the gateway. No <em>secret</em> in the pipeline.</h1>
+  <p class="lede">Enterprise Azure infrastructure in Terraform: hub-spoke networking, a private AKS cluster, API Management behind Front Door Premium, and GitHub Actions that sign in with OIDC. Each decision is written down and linked to its code.</p>
+  <div class="cta"><a class="btn primary" href="#try">Explore the architecture</a><a class="btn" href="#install">Use it</a></div>
+  <div class="stats"><div><b>7</b>Terraform stacks</div><div><b>0</b>stored client secrets</div><div><b>0</b>Azure subscriptions touched here</div></div>
+</div></header>
+
+
+<section id="try"><div class="wrap">
+  <h2>Click the architecture. See the decision and the code.</h2>
+  <p class="sub">Pick a component to read why it is built that way, taken from the repo's own design notes, and which Terraform stack builds it. The resource and module lists are generated from the <code>.tf</code> files on every deploy.</p>
+  <div class="lab">
+    <div class="card"><h3><span>Architecture</span></h3>
+      <div class="arch" id="arch">
+        <div class="row"><button class="nd" data-n="fd"><b>Front Door Premium</b><small>WAF, OWASP 3.2 + bot rules</small></button></div>
+        <div class="arrow">Private Link</div>
+        <div class="row"><button class="nd" data-n="apim"><b>API Management</b><small>Internal VNet, JWT, Key Vault</small></button></div>
+        <div class="arrow">&darr;</div>
+        <div class="row"><button class="nd" data-n="aks"><b>Private AKS</b><small>CNI Overlay, Workload Identity</small></button><button class="nd" data-n="sb"><b>Service Bus Premium</b><small>private endpoint</small></button></div>
+        <div class="arrow">&darr; peered to</div>
+        <div class="row"><button class="nd" data-n="hub"><b>Hub VNet</b><small>Firewall Premium, Bastion, DNS</small></button><button class="nd" data-n="mon"><b>Monitoring</b><small>Log Analytics</small></button><button class="nd edge" data-n="lz"><b>Landing zone</b><small>management groups, policy</small></button></div>
+      </div>
+    </div>
+    <div class="card" id="det" aria-live="polite"><h3><span>Decision</span></h3><div class="status" id="boot">Loading...</div></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Deployment order</h2>
+  <p class="sub">Seven stacks, applied in this order. Click one to see what it builds.</p>
+  <div class="ord" id="ord"></div>
+  <div class="card" style="margin-top:12px"><div class="det" id="ordd"></div></div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>No stored secrets in CI</h2>
+  <p class="sub">The pipeline signs in with a federated identity credential. The workflows request <code>id-token: write</code> and call <code>azure/login@v2</code> with OIDC, so there is no client secret to leak or rotate. The plan job runs on pull requests, and apply is serialized behind a <code>production</code> environment gate.</p>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h3>PR opens</h3><p>The plan workflow authenticates with a credential scoped to pull requests, runs a plan per workspace and posts the diff.</p></div>
+    <div class="step"><div class="n">2</div><h3>Review</h3><p>The plan diff is in the pull request for people to read.</p></div>
+    <div class="step"><div class="n">3</div><h3>Merge and approve</h3><p>Apply uses a credential scoped to the main branch and waits for the production environment approval.</p></div>
+  </div>
+</div></section>
+
+<section id="install" class="install"><div class="wrap">
+  <h2>Use it</h2>
+  <p class="sub">Terraform 1.7 or later and an Azure tenant. Every company-specific value in the repo is a <code>PLACEHOLDER_*</code>.</p>
+  <div class="cols2">
+    <div>
+<pre>az ad app create --display-name "PLACEHOLDER_SP_NAME"
+az ad sp create --id &lt;app-id&gt;
+# add federated credentials for main and pull_request,
+# then set AZURE_CLIENT_ID and AZURE_TENANT_ID as repo secrets</pre>
+    </div>
+    <div>
+<pre>cd platform/hub-network
+terraform init
+terraform plan</pre>
+      <p class="note">The stacks call versioned modules from <a href="https://github.com/gerardrecinto/terraform-infra-blueprints">terraform-infra-blueprints</a>.</p>
+    </div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="limits">
+    <strong>What this does not do</strong>
+    <ul>
+      <li>It is reference infrastructure with placeholder values. The README does not claim a live deployment.</li>
+      <li>The page lists resources and modules by pattern scan of the <code>.tf</code> files. It does not run Terraform.</li>
+      <li>The decision text is the author's design reasoning, not a measured comparison.</li>
+    </ul>
+  </div>
+</div></section>
+
+
+<footer><div class="wrap">
+  <span>azure-infrastructure. MIT licensed. Built by <a href="https://github.com/gerardrecinto">Gerard Recinto</a>.</span>
+  <span><a href="https://github.com/gerardrecinto/azure-infrastructure">Source</a> &middot; <a href="https://github.com/gerardrecinto/azure-infrastructure/releases">Releases</a></span>
+</div></footer>
+
+<script>
+
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const track = (n) => { try { if (window.plausible) window.plausible(n); } catch (e) {} };
+  const NODES = {"fd": {"title": "Front Door Premium", "stack": "workloads/api-platform", "decTitle": "APIM Internal VNet + Front Door Premium", "why": "APIM has no routable public IP. Front Door Premium reaches the APIM internal address through Private Link, so the gateway is only reachable after passing the WAF. The usual alternative, APIM on a public IP behind an allowlist, breaks when those IPs rotate."}, "apim": {"title": "API Management", "stack": "workloads/api-platform", "decTitle": "Key Vault RBAC over access policies", "why": "Access policies predate Azure RBAC and do not work with Conditional Access, PIM or Azure Policy audit. With RBAC authorization on, Key Vault access uses the same role pipeline as every other resource: auditable, PIM-eligible and enforceable with Policy deny effects."}, "aks": {"title": "Private AKS", "stack": "workloads/aks-platform", "decTitle": "Private cluster, CNI Overlay, Workload Identity", "why": "The API server is a private endpoint in the hub, so even a misconfigured NSG cannot expose it. CNI Overlay keeps pod IPs out of the VNet, where classic Azure CNI exhausts a /22 at roughly 200 nodes. Workload Identity issues OIDC tokens scoped to one ServiceAccount, so a compromised pod cannot reach the node-level identity the way pod-managed identity allowed."}, "sb": {"title": "Service Bus Premium", "stack": "workloads/messaging", "decTitle": "Messaging behind a private endpoint", "why": "Service Bus Premium sits on a private endpoint, with alerts on the dead-letter queue."}, "hub": {"title": "Hub VNet", "stack": "platform/hub-network", "decTitle": "Hub-spoke over full mesh", "why": "At n spokes a full mesh needs n(n-1)/2 peerings and every spoke manages routes to every other. Hub-spoke sends east-west traffic through Azure Firewall Premium for inspection, and a new spoke is one peering pair."}, "mon": {"title": "Monitoring", "stack": "platform/monitoring", "decTitle": "Shared workspace", "why": "Workloads read the Log Analytics workspace ID from this stack through Terraform remote state."}, "lz": {"title": "Landing zone", "stack": "landing-zone/management-groups", "decTitle": "Policy at the management group", "why": "A tenant root, org, platform, workloads and sandbox hierarchy, with deny policies for public Key Vault access, privileged AKS and disallowed locations."}};
+  const ORDER = ["landing-zone/management-groups", "landing-zone/policies", "platform/hub-network", "platform/monitoring", "workloads/aks-platform", "workloads/api-platform", "workloads/messaging"];
+  let stacks = null, curNode = null, curStack = ORDER[0];
+  function stackHtml(s) {
+    const d = stacks[s]; if (!d) return "";
+    const types = [...new Set(d.resources.map((r) => r.type))];
+    return `<p><span class="k">${esc(s)}</span> ${d.variables} inputs, ${d.outputs} outputs</p>
+      ${d.modules.length ? `<p>Composes modules: ${d.modules.map((m) => `<span class="rs"><code>${esc(m.name)}</code></span> from <code>${esc(m.source)}</code> ${m.ref ? "at " + esc(m.ref) : ""}`).join("; ")}</p>` : ""}
+      ${types.length ? `<p class="rs">Direct resources: ${types.map((t) => `<code>${esc(t)}</code>`).join("")}</p>` : ""}`;
+  }
+  function showNode(k) {
+    curNode = k; const n = NODES[k];
+    document.querySelectorAll(".nd").forEach((b) => b.setAttribute("aria-pressed", b.dataset.n === k));
+    $("det").innerHTML = `<h3><span>${esc(n.title)}</span></h3><div class="det"><h4>${esc(n.decTitle)}</h4><p class="why">${esc(n.why)}</p>${stacks ? stackHtml(n.stack) : ""}</div>`;
+    track("az_node_" + k);
+  }
+  function showStack(s) {
+    curStack = s; document.querySelectorAll("#ord button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.s === s));
+    $("ordd").innerHTML = stackHtml(s);
+  }
+  document.querySelectorAll(".nd").forEach((b) => b.addEventListener("click", () => showNode(b.dataset.n)));
+  $("ord").innerHTML = ORDER.map((s, i) => `<button data-s="${s}" aria-pressed="false"><span class="n">${i + 1}</span>${esc(s.split("/")[1])}</button>`).join("");
+  $("ord").addEventListener("click", (e) => { const b = e.target.closest("[data-s]"); if (b) { showStack(b.dataset.s); track("az_stack"); } });
+  fetch("stacks.json").then((r) => r.json()).then((d) => { stacks = d; showNode("fd"); showStack(ORDER[0]); window.__AZ_READY__ = true; })
+    .catch(() => { $("det").innerHTML = '<h3><span>Decision</span></h3><div class="status">The stack list did not load. The README has the same design notes.</div>'; });
+})();
+
+</script>
+</body>
+</html>

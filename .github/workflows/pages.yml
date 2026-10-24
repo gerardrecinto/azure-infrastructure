@@ -1,0 +1,52 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "landing-zone/**", "platform/**", "workloads/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp site/index.html _site/
+          python3 - . _site/stacks.json <<'PY'
+          import json, os, re, sys
+          root, out = sys.argv[1], sys.argv[2]
+          STACKS = ["landing-zone/management-groups","landing-zone/policies","platform/hub-network","platform/monitoring","workloads/aks-platform","workloads/api-platform","workloads/messaging"]
+          res = {}
+          for s in STACKS:
+              d = os.path.join(root, s); tf = ""
+              for f in sorted(os.listdir(d)):
+                  if f.endswith(".tf"): tf += open(os.path.join(d, f)).read() + "\n"
+              items = re.findall(r'^resource\s+"([^"]+)"\s+"([^"]+)"', tf, re.M)
+              mods = [{"name": a, "source": b.split("?")[0].split("//")[-1], "ref": (b.split("ref=")[1] if "ref=" in b else "")} for a, b in re.findall(r'^module\s+"([^"]+)"\s*\{[^}]*?source\s*=\s*"([^"]+)"', tf, re.M)]
+              res[s] = {"resources": [{"type": t, "name": n} for t, n in items], "variables": len(re.findall(r'^variable\s+"', tf, re.M)),
+                        "outputs": len(re.findall(r'^output\s+"', tf, re.M)), "modules": mods}
+          json.dump(res, open(out, "w"))
+          print({k: len(v["resources"]) for k, v in res.items()})
+          PY
+          touch _site/.nojekyll
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v5
