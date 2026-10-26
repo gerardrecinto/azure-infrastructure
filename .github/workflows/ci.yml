@@ -12,7 +12,7 @@ jobs:
   fmt:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -35,7 +35,7 @@ jobs:
           - workloads/api-platform
           - workloads/messaging
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -52,7 +52,7 @@ jobs:
   security-scan:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: tfsec
         uses: aquasecurity/tfsec-action@v1.0.3
